@@ -1,30 +1,48 @@
 // DFRduino Nano
-// BME280
-// nRF24L01
+// BME280 I2C mode
+// nRF24L01+
 // DFRobot Solar Power Manager + 18650 Cell + 0,4W Solar panel
 
 #include <Wire.h>
-#include <SPI.h>
-
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BME280.h>
+#include <forcedClimate.h>
 
 #define DEBUGMODE 1  // 1 = Serial debugging messages, 0 = none
 
+ForcedClimate climateSensor = ForcedClimate();
+
 void setup() {
-  initializeBME();
+  initializeSerial();
+  Wire.begin();
+  climateSensor.begin();
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-}
-void initializeBME() {
-  Adafruit_BME280 bme;
-  bool BMEinit = bme.begin();
-  if (BMEinit || DEBUGMODE) {
-    Serial.println("BME280 init success");
-  } else {
-    Serial.println("BME280 init failure");
-    while (1) {}
+  climateSensor.takeForcedMeasurement();
+  if (DEBUGMODE) {
+    printData();
   }
+  delay(1000);
+}
+
+//===========================================================
+
+void initializeSerial() {
+  if (DEBUGMODE) {
+    Serial.begin(9600);
+    Serial.println("Hello world");
+  }
+}
+
+void printData() {
+  Serial.print("temperature:");
+  Serial.print(climateSensor.getTemperatureCelcius());
+  Serial.print("*C   ");
+
+  Serial.print("pressure:");
+  Serial.print(climateSensor.getPressure() / 100.0F);
+  Serial.print("hPa   ");
+
+  Serial.print("humidity:");
+  Serial.print(climateSensor.getRelativeHumidity());
+  Serial.println("%");
 }
