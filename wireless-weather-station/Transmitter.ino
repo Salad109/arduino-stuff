@@ -24,14 +24,13 @@ EN=BAT
 5V                          -> 5V
 GND                         -> GND
 ==========================================================*/
-#include <forcedClimate.h>
+#include "forcedClimate.h"
 #include "LowPower.h"
 #include "NRFLite.h"
 
 #define DEBUG_MODE 1     // 1 = Serial debugging messages, 0 = Serial disabled
-#define NRF_POWER_PIN 8  // nRF power transistor's base
 
-ForcedClimate climateSensor = ForcedClimate();
+ForcedClimate climateSensor = ForcedClimate(Wire, 0x76);
 
 
 const static uint8_t RADIO_ID = 1;              // TX RADIO ID(me)
@@ -53,8 +52,6 @@ NRFLite _radio;
 RadioPacket _radioData;
 
 void setup() {
-  pinMode(NRF_POWER_PIN, OUTPUT);
-  digitalWrite(NRF_POWER_PIN, HIGH);
   if (DEBUG_MODE) {
     Serial.begin(9600);
     Serial.println("Hello world");
@@ -70,8 +67,7 @@ void setup() {
 }
 
 void loop() {
-  climateSensor.takeForcedMeasurement();
-  digitalWrite(NRF_POWER_PIN, HIGH);  // Power on the radio module
+  getData();                          // Get readings then save them to the _radioData object.
   _radioData.OnTimeMillis = millis();
   if (DEBUG_MODE) {  // DEBUGGING LOOP
     printData();
@@ -92,28 +88,33 @@ void loop() {
     }
   }
 
-  digitalWrite(NRF_POWER_PIN, LOW);  // Power off the radio module
-
-  LowPower.powerDown(SLEEP_2S, ADC_OFF, BOD_OFF);
+  LowPower.powerDown(SLEEP_4S, ADC_OFF, BOD_OFF);
+  /*
+  LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF); 
+  LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF); 
+  LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF); 
+  LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF); 
+  */
 }
 
 //===========================================================
 
 void printData() {
   Serial.print("Temperature:");
-  Serial.print(climateSensor.getTemperatureCelcius());
+  Serial.print(_radioData.temp);
   Serial.print("*C    ");
 
   Serial.print("Pressure:");
-  Serial.print(climateSensor.getPressure() / 100.0F);
+  Serial.print(_radioData.pres);
   Serial.print("hPa    ");
 
   Serial.print("Humidity:");
-  Serial.print(climateSensor.getRelativeHumidity());
+  Serial.print(_radioData.humi);
   Serial.print("%    ");
 }
-void saveData() {
+void getData() {
+  climateSensor.takeForcedMeasurement();
   _radioData.temp = climateSensor.getTemperatureCelcius();
-  _radioData.pres = climateSensor.getPressure() / 100.0F;
+  _radioData.pres = climateSensor.getPressure();
   _radioData.humi = climateSensor.getRelativeHumidity();
 }
